@@ -41,30 +41,35 @@ def determine_retirement_age(current_net_worth, annual_income, annual_expenses, 
 # Streamlit app
 st.title('Retirement Financial Projection')
 
-# Input fields
-current_age = st.number_input('Current Age', value=30, step=1)
-current_net_worth = st.number_input('Current Net Worth', value=100000, step=1000)
-annual_income = st.number_input('Annual Income', value=50000, step=1000)
-annual_expenses = st.number_input('Annual Expenses', value=40000, step=1000)
-annual_return = st.slider('Annual Return on Investments (%)', min_value=0.0, max_value=15.0, value=7.0, step=0.1)
-inflation_rate = st.slider('Inflation Rate (%)', min_value=0.0, max_value=10.0, value=2.0, step=0.1)
-life_expectancy_age = st.number_input('Life Expectancy Age', value=90, step=1)
+# Create tabs
+tabs = st.tabs(['Simple', 'Intermediate', 'Advanced'])
 
-# Calculate projection
-retirement_age, leftover_net_worth = determine_retirement_age(current_net_worth, annual_income, annual_expenses, annual_return, current_age, inflation_rate, life_expectancy_age)
-projection_df = calculate_projection(current_net_worth, annual_income, annual_expenses, annual_return, current_age, retirement_age, inflation_rate, life_expectancy_age)
+for tab in tabs:
+    with tab:
+        # Input fields
+        current_age = st.number_input('Current Age', value=30, step=1)
+        current_net_worth = st.number_input('Current Net Worth', value=100000, step=1000)
+        annual_income = st.number_input('Annual Income', value=50000, step=1000)
+        annual_expenses = st.number_input('Annual Expenses', value=40000, step=1000)
+        annual_return = st.slider('Annual Return on Investments (%)', min_value=0.0, max_value=15.0, value=7.0, step=0.1)
+        inflation_rate = st.slider('Inflation Rate (%)', min_value=0.0, max_value=10.0, value=2.0, step=0.1)
+        life_expectancy_age = st.number_input('Life Expectancy Age', value=90, step=1)
 
-if retirement_age < life_expectancy_age:
-    st.success(f'You can retire at age {retirement_age} based on your current financial plan! You will have ${leftover_net_worth:,.0f} left at age {life_expectancy_age}.')
-else:
-    st.warning(f'You need to continue working to ensure financial stability until age {life_expectancy_age}.')
+        # Calculate projection
+        retirement_age, leftover_net_worth = determine_retirement_age(current_net_worth, annual_income, annual_expenses, annual_return, current_age, inflation_rate, life_expectancy_age)
+        projection_df = calculate_projection(current_net_worth, annual_income, annual_expenses, annual_return, current_age, retirement_age, inflation_rate, life_expectancy_age)
 
-# Plotting the graph with Plotly
-st.subheader('Net Worth Over Time')
-fig = px.line(projection_df, x='Age', y='Net Worth', color='Phase', 
-              labels={'Net Worth': 'Net Worth ($)', 'Age': 'Age'},
-              title='Net Worth Over Time')
-st.plotly_chart(fig)
+        if retirement_age < life_expectancy_age:
+            st.success(f'You can retire at age {retirement_age} based on your current financial plan! You will have ${leftover_net_worth:,.0f} left at age {life_expectancy_age}.')
+        else:
+            st.warning(f'You need to continue working to ensure financial stability until age {life_expectancy_age}.')
 
-st.subheader('Financial Projection')
-st.dataframe(projection_df)
+        # Plotting the graph with Plotly
+        st.subheader('Net Worth Over Time')
+        fig = px.line(projection_df, x='Age', y='Net Worth', color='Phase', 
+                      labels={'Net Worth': 'Net Worth ($)', 'Age': 'Age'},
+                      title='Net Worth Over Time')
+        st.plotly_chart(fig)
+
+        st.subheader('Financial Projection')
+        st.dataframe(projection_df)
