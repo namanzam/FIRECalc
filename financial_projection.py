@@ -13,7 +13,7 @@ st.title('Retirement Financial Projection')
 left_col, right_col = st.columns([1, 3])
 
 with left_col:
-    with st.expander("Input Variables", expanded=True):
+    with st.expander("Basic Info", expanded=True):
         # Input fields
         current_age = st.number_input('Current Age', value=30, step=1, key='age')
         current_net_worth = st.number_input('Current Net Worth', value=100000, step=1000, key='net_worth')
