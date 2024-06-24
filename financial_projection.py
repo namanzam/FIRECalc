@@ -1,62 +1,10 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
+from projection import calculate_projection, determine_retirement_age
+from event_management import add_event, remove_event, edit_event, update_event
 
 # Set the page configuration
 st.set_page_config(layout="wide")
-
-# Function to calculate the financial projection
-def calculate_projection(current_net_worth, annual_income, annual_expenses, annual_return, current_age, retirement_age, inflation_rate, life_expectancy_age, income_increase_rate, big_events):
-    data = []
-    age = current_age
-    net_worth = current_net_worth
-    
-    while age <= life_expectancy_age:
-        income = annual_income if age < retirement_age else 0
-        return_on_investment = round(net_worth * (annual_return / 100)) if net_worth > 0 else 0
-
-        # Adjust annual expenses based on big events
-        event_expenses = 0
-        for event in big_events:
-            if event['type'] == 'House' and event['age'] == age:
-                event_expenses += event['price']
-            elif event['type'] == 'Car' and event['age'] == age:
-                event_expenses += event['price']
-            elif event['type'] == 'Wedding' and event['age'] == age:
-                event_expenses += event['cost']
-            elif event['type'] == 'Kid':
-                if event['age'] <= age < event['age'] + 18:
-                    event_expenses += event['yearly_cost']
-                if event['age'] + 18 <= age < event['age'] + 22:
-                    event_expenses += event['college_cost'] / 4
-        
-        net_savings = round(income + return_on_investment - annual_expenses - event_expenses)
-        
-        phase = 'Acquisition' if age < retirement_age else 'Retirement'
-        
-        data.append({
-            'Age': age,
-            'Net Worth': net_worth,
-            'Income': income,
-            'Return on Investments': return_on_investment,
-            'Expenses': annual_expenses + event_expenses,
-            'Net Savings': net_savings,
-            'Phase': phase
-        })
-        
-        net_worth += net_savings
-        annual_expenses = round(annual_expenses * (1 + inflation_rate / 100))
-        annual_income = round(annual_income * (1 + income_increase_rate / 100)) if age < retirement_age else annual_income
-        age += 1
-    
-    return pd.DataFrame(data)
-
-def determine_retirement_age(current_net_worth, annual_income, annual_expenses, annual_return, current_age, inflation_rate, life_expectancy_age, income_increase_rate, big_events):
-    for retirement_age in range(current_age, life_expectancy_age + 1):
-        projection_df = calculate_projection(current_net_worth, annual_income, annual_expenses, annual_return, current_age, retirement_age, inflation_rate, life_expectancy_age, income_increase_rate, big_events)
-        if projection_df.loc[projection_df['Age'] == life_expectancy_age, 'Net Worth'].values[0] >= 0:
-            return retirement_age, projection_df.loc[projection_df['Age'] == life_expectancy_age, 'Net Worth'].values[0]
-    return life_expectancy_age, 0
 
 # Streamlit app
 st.title('Retirement Financial Projection')
@@ -106,55 +54,23 @@ with left_col:
     if 'big_events' not in st.session_state:
         st.session_state['big_events'] = []
 
-    def add_event():
-        event = {'type': st.session_state['event_type'], 'age': st.session_state['event_age']}
-        if st.session_state['event_type'] == "House":
-            event['price'] = st.session_state['event_price']
-        elif st.session_state['event_type'] == "Car":
-            event['price'] = st.session_state['event_price']
-        elif st.session_state['event_type'] == "Wedding":
-            event['cost'] = st.session_state['event_cost']
-        elif st.session_state['event_type'] == "Kid":
-            event['yearly_cost'] = st.session_state['event_yearly_cost']
-            event['college_cost'] = st.session_state['event_college_cost']
-        st.session_state['big_events'].append(event)
-
-    def remove_event(index):
-        st.session_state['big_events'].pop(index)
-
-    def edit_event(index):
-        event = st.session_state['big_events'][index]
-        st.session_state['event_type'] = event['type']
-        st.session_state['event_age'] = event['age']
-        if event['type'] == "House":
-            st.session_state['event_price'] = event['price']
-        elif event['type'] == "Car":
-            st.session_state['event_price'] = event['price']
-        elif event['type'] == "Wedding":
-            st.session_state['event_cost'] = event['cost']
-        elif event['type'] == "Kid":
-            st.session_state['event_yearly_cost'] = event['yearly_cost']
-            st.session_state['event_college_cost'] = event['college_cost']
-        st.session_state['edit_index'] = index
-
     with st.expander("Big Events", expanded=True):
         st.subheader('Add Big Events')
         if 'edit_index' in st.session_state:
-            event_index = st.session_state['edit_index']
-            st.write(f"Editing Event #{event_index + 1}")
-            event_type = st.selectbox("Select Event Type", ["House", "Car", "Wedding", "Kid"], key='event_type', index=['House', 'Car', 'Wedding', 'Kid'].index(st.session_state['big_events'][event_index]['type']))
-            event_age = st.number_input('Age', value=st.session_state['big_events'][event_index]['age'], step=1, key='event_age')
+            st.write(f"Editing Event #{st.session_state['edit_index'] + 1}")
+            event_type = st.selectbox("Select Event Type", ["House", "Car", "Wedding", "Kid"], key='event_type')
+            event_age = st.number_input('Age', value=st.session_state['event_age'], step=1, key='event_age')
             if event_type == "House":
-                event_price = st.number_input('Price', value=st.session_state['big_events'][event_index]['price'], step=1000, key='event_price')
+                event_price = st.number_input('Price', value=st.session_state['event_price'], step=1000, key='event_price')
             elif event_type == "Car":
-                event_price = st.number_input('Price', value=st.session_state['big_events'][event_index]['price'], step=1000, key='event_price')
+                event_price = st.number_input('Price', value=st.session_state['event_price'], step=1000, key='event_price')
             elif event_type == "Wedding":
-                event_cost = st.number_input('Cost', value=st.session_state['big_events'][event_index]['cost'], step=1000, key='event_cost')
+                event_cost = st.number_input('Cost', value=st.session_state['event_cost'], step=1000, key='event_cost')
             elif event_type == "Kid":
-                event_yearly_cost = st.number_input('Yearly Cost', value=st.session_state['big_events'][event_index]['yearly_cost'], step=1000, key='event_yearly_cost')
-                event_college_cost = st.number_input('College Cost', value=st.session_state['big_events'][event_index]['college_cost'], step=1000, key='event_college_cost')
+                event_yearly_cost = st.number_input('Yearly Cost', value=st.session_state['event_yearly_cost'], step=1000, key='event_yearly_cost')
+                event_college_cost = st.number_input('College Cost', value=st.session_state['event_college_cost'], step=1000, key='event_college_cost')
             
-            st.button("Update Event", on_click=lambda: st.session_state['big_events'].pop(event_index) or add_event() or st.session_state.pop('edit_index', None))
+            st.button("Update Event", on_click=update_event)
         else:
             event_type = st.selectbox("Select Event Type", ["House", "Car", "Wedding", "Kid"], key='event_type')
             event_age = st.number_input('Age', value=30, step=1, key='event_age')
